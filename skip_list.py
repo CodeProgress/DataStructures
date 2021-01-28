@@ -4,42 +4,25 @@ import random
 class SkipList:
     def __init__(self):
         self.head = Node(None, None)
-        self.nodes_along_search_path = []
 
     def insert(self, value):
-        # test invariants
-        assert(len(self.nodes_along_search_path) == 0)
-
-        curr = self.head
-        while curr:
-            if curr.next_node is None or value < curr.next_node.value:
-                # drop down a level
-                if curr.below_node:
-                    # nodes only added to search path when dropping a level down
-                    self.nodes_along_search_path.append(curr)
-                    curr = curr.below_node
-                else:
-                    break  # we're on the bottom level, and this is where value goes
-            else:
-                curr = curr.next_node
-
-        # if we're NOT on the bottom level, move to the "curr" node that is on the bottom level
-        while curr.below_node is not None:
-            self.nodes_along_search_path.append(curr)
-            curr = curr.below_node
+        node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
 
         # don't add duplicates:
-        if curr.value == value:
+        if node.value == value:
             return
 
         # create new node to insert
-        node_to_insert = Node(value, curr.next_node)
-        curr.next_node = node_to_insert
+        node_to_insert = Node(value, node.next_node)
+        node.next_node = node_to_insert
 
         # add levels
+        self.add_node_levels(node_to_insert, nodes_along_search_path)
+
+    def add_node_levels(self, node_to_insert, nodes_along_search_path):
         while random.random() < .5:
-            if self.nodes_along_search_path:
-                prev_node = self.nodes_along_search_path.pop()
+            if nodes_along_search_path:
+                prev_node = nodes_along_search_path.pop()
             else:
                 new_head = Node(None, None)
                 self.head.above_node = new_head
@@ -49,23 +32,36 @@ class SkipList:
             node_to_insert.add_level(prev_node)
             node_to_insert = node_to_insert.above_node
 
-        self.nodes_along_search_path = []
+    def get_node_where_value_should_be_and_search_path(self, value):
+        nodes_along_search_path = []
+        curr = self.head
+        while curr:
+            if curr.next_node is None or value < curr.next_node.value:
+                # drop down a level
+                if curr.below_node:
+                    # nodes only added to search path when dropping a level down
+                    nodes_along_search_path.append(curr)
+                    curr = curr.below_node
+                else:
+                    break  # we're on the bottom level, and this is where value goes
+            else:
+                curr = curr.next_node
+        # if we're NOT on the bottom level, move to the "curr" node that is on the bottom level
+        while curr.below_node is not None:
+            nodes_along_search_path.append(curr)
+            curr = curr.below_node
+
+        return curr, nodes_along_search_path
 
     def search(self, value):
-        raise NotImplementedError
-
-        # # reg linked list
-        # curr = self.head
-        # while self.head:
-        #     if curr.value == value:
-        #         return True
-        #     curr = curr.next_node
-        # return False
+        possible_matching_node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
+        return possible_matching_node is not None and possible_matching_node.value == value
 
     def delete(self, value):
         raise NotImplementedError
 
     def __str__(self):
+        output = ""
         total_values = 0
         max_num_vals_to_print_per_row = 20
         row_start_node = self.head
@@ -74,13 +70,13 @@ class SkipList:
             num_vals_in_row = len(row_values)
             total_values += num_vals_in_row
             if num_vals_in_row <= max_num_vals_to_print_per_row:
-                output = f"len: {num_vals_in_row} -> {row_values}"
+                output += f"len: {num_vals_in_row} -> {row_values}\n"
             else:
                 half = max_num_vals_to_print_per_row//2
-                output = f"len: {num_vals_in_row} -> {row_values[:half]} ... {row_values[-half:]}"
-            print(output)
+                output += f"len: {num_vals_in_row} -> {row_values[:half]} ... {row_values[-half:]}\n"
             row_start_node = row_start_node.below_node
-        return f"total vals: {total_values}"
+        output += f"total vals: {total_values}"
+        return output
 
     @staticmethod
     def get_values_in_row(row_start_node):
@@ -113,9 +109,9 @@ class Node:
         self.above_node = above_node
 
 
-random.seed(8)
+# random.seed(8)
 skip_list = SkipList()
-rand_vals = random.sample(range(1000), 1000)
+rand_vals = random.sample(range(1000), 500)
 for i in rand_vals:
     skip_list.insert(i)
 
@@ -123,8 +119,9 @@ values = skip_list.get_all_values()
 assert(values == sorted(rand_vals))
 
 print(skip_list)
+print(skip_list.search(1))
 
-# Output when using random seed 8
+# Output when using random seed 8, random.sample(range(1000), 1000)
 # len: 1 -> [305]
 # len: 2 -> [305, 691]
 # len: 7 -> [199, 305, 544, 621, 691, 755, 984]
