@@ -19,6 +19,19 @@ class SkipList:
         # add levels
         self.add_node_levels(node_to_insert, nodes_along_search_path)
 
+    def search(self, value):
+        """returns True if value is in SkipList, False if value is not in SkipList"""
+        possible_matching_node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
+        return possible_matching_node is not None and possible_matching_node.value == value
+
+    def delete(self, value):
+        possible_matching_node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
+        if possible_matching_node is None or possible_matching_node.value != value:
+            return
+        # while possible_matching_node.above_node != None:
+        #     # connect node.previous to node.next, for all nodes up the levels
+        raise NotImplementedError
+
     def add_node_levels(self, node_to_insert, nodes_along_search_path):
         while random.random() < .5:
             if nodes_along_search_path:
@@ -52,13 +65,6 @@ class SkipList:
             curr = curr.below_node
 
         return curr, nodes_along_search_path
-
-    def search(self, value):
-        possible_matching_node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
-        return possible_matching_node is not None and possible_matching_node.value == value
-
-    def delete(self, value):
-        raise NotImplementedError
 
     def __str__(self):
         output = ""
@@ -120,6 +126,9 @@ assert(values == sorted(rand_vals))
 
 print(skip_list)
 print(skip_list.search(1))
+
+empty_skip_list = SkipList()
+print(empty_skip_list.search(4))
 
 # Output when using random seed 8, random.sample(range(1000), 1000)
 # len: 1 -> [305]
