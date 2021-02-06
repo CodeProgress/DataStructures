@@ -6,18 +6,22 @@ class SkipList:
         self.head = Node(None, None)
 
     def insert(self, value):
-        node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
+        node_before_node_to_insert, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
 
         # don't add duplicates:
-        if node.value == value:
+        if node_before_node_to_insert.value == value:
             return
 
         # create new node to insert
-        node_to_insert = Node(value, node.next_node)
-        node.next_node = node_to_insert
+        node_after_node_to_insert = node_before_node_to_insert.next_node
+        new_node_to_insert = Node(value, node_after_node_to_insert)
+        node_before_node_to_insert.next_node = new_node_to_insert
+        new_node_to_insert.previous_node = node_before_node_to_insert
+        if new_node_to_insert.next_node:
+            new_node_to_insert.next_node.previous_node = new_node_to_insert
 
         # add levels
-        self.add_node_levels(node_to_insert, nodes_along_search_path)
+        self.add_node_levels(new_node_to_insert, nodes_along_search_path)
 
     def search(self, value):
         """returns True if value is in SkipList, False if value is not in SkipList"""
@@ -28,9 +32,17 @@ class SkipList:
         possible_matching_node, nodes_along_search_path = self.get_node_where_value_should_be_and_search_path(value)
         if possible_matching_node is None or possible_matching_node.value != value:
             return
-        # while possible_matching_node.above_node != None:
-        #     # connect node.previous to node.next, for all nodes up the levels
-        raise NotImplementedError
+        node_to_remove = possible_matching_node
+        node_to_remove.previous_node.next_node = node_to_remove.next_node
+        if node_to_remove.next_node:
+            node_to_remove.next_node.previous_node = node_to_remove.previous_node
+        # remove node levels instead of add node levels
+        while node_to_remove.above_node:
+            # check if previous and next are head and None?
+            node_to_remove = node_to_remove.above_node
+            node_to_remove.previous_node.next_node = node_to_remove.next_node
+            if node_to_remove.next_node:
+                node_to_remove.next_node.previous_node = node_to_remove.previous_node
 
     def add_node_levels(self, node_to_insert, nodes_along_search_path):
         while random.random() < .5:
@@ -106,18 +118,22 @@ class Node:
         self.next_node = next_node
         self.below_node = None
         self.above_node = None
+        self.previous_node = None  # only needed for bottom level
 
-    def add_level(self, most_recent_path_node):
-        above_node = Node(self.value, most_recent_path_node.next_node)
+    def add_level(self, previous_node_on_level):
+        above_node = Node(self.value, previous_node_on_level.next_node)
+        if previous_node_on_level.next_node:
+            previous_node_on_level.next_node.previous_node = above_node
         above_node.below_node = self
         above_node.above_node = None
-        most_recent_path_node.next_node = above_node
+        previous_node_on_level.next_node = above_node
+        above_node.previous_node = previous_node_on_level
         self.above_node = above_node
 
 
-# random.seed(8)
+random.seed(8)
 skip_list = SkipList()
-rand_vals = random.sample(range(1000), 500)
+rand_vals = random.sample(range(1000), 1000)
 for i in rand_vals:
     skip_list.insert(i)
 
@@ -125,10 +141,6 @@ values = skip_list.get_all_values()
 assert(values == sorted(rand_vals))
 
 print(skip_list)
-print(skip_list.search(1))
-
-empty_skip_list = SkipList()
-print(empty_skip_list.search(4))
 
 # Output when using random seed 8, random.sample(range(1000), 1000)
 # len: 1 -> [305]
